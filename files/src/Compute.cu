@@ -136,11 +136,11 @@ __global__ void background_estimation_kernel(
 }
 
 // Kernel for motion mask calculation
-// Motion mask is a SCORE (0-255), not binary!
 __global__ void motion_mask_kernel(
     ImageView<rgb8> current_frame,
     ImageView<rgb8> background,
-    ImageView<uint8_t> motion_mask)
+    ImageView<uint8_t> motion_mask,
+    int th_low)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -159,12 +159,11 @@ __global__ void motion_mask_kernel(
     int dg = abs((int)current_pixel.g - (int)bg_pixel.g);
     int db = abs((int)current_pixel.b - (int)bg_pixel.b);
     
-    // Motion score (0-255), not binary
     int diff = dr + dg + db;
-    mask_ptr[x] = (uint8_t)min(diff, 255);
+    mask_ptr[x] = (diff > th_low) ? 255 : 0;
 }
 
-// Kernel for morphological erosion with disk structuring element
+// Kernel for morphological erosion
 __global__ void erosion_kernel(
     ImageView<uint8_t> input,
     ImageView<uint8_t> output,
@@ -177,22 +176,17 @@ __global__ void erosion_kernel(
         return;
     
     uint8_t min_val = 255;
-    int radius_sq = radius * radius;
     for (int dy = -radius; dy <= radius; ++dy)
     {
         for (int dx = -radius; dx <= radius; ++dx)
         {
-            // Use circular structuring element (disk)
-            if (dx*dx + dy*dy <= radius_sq)
+            int nx = x + dx;
+            int ny = y + dy;
+            if (nx >= 0 && nx < input.width && ny >= 0 && ny < input.height)
             {
-                int nx = x + dx;
-                int ny = y + dy;
-                if (nx >= 0 && nx < input.width && ny >= 0 && ny < input.height)
-                {
-                    uint8_t val = input.buffer[ny * input.stride + nx];
-                    if (val < min_val)
-                        min_val = val;
-                }
+                uint8_t val = input.buffer[ny * input.stride + nx];
+                if (val < min_val)
+                    min_val = val;
             }
         }
     }
@@ -200,7 +194,7 @@ __global__ void erosion_kernel(
     output.buffer[y * output.stride + x] = min_val;
 }
 
-// Kernel for morphological dilation with disk structuring element
+// Kernel for morphological dilation
 __global__ void dilation_kernel(
     ImageView<uint8_t> input,
     ImageView<uint8_t> output,
@@ -213,22 +207,17 @@ __global__ void dilation_kernel(
         return;
     
     uint8_t max_val = 0;
-    int radius_sq = radius * radius;
     for (int dy = -radius; dy <= radius; ++dy)
     {
         for (int dx = -radius; dx <= radius; ++dx)
         {
-            // Use circular structuring element (disk)
-            if (dx*dx + dy*dy <= radius_sq)
+            int nx = x + dx;
+            int ny = y + dy;
+            if (nx >= 0 && nx < input.width && ny >= 0 && ny < input.height)
             {
-                int nx = x + dx;
-                int ny = y + dy;
-                if (nx >= 0 && nx < input.width && ny >= 0 && ny < input.height)
-                {
-                    uint8_t val = input.buffer[ny * input.stride + nx];
-                    if (val > max_val)
-                        max_val = val;
-                }
+                uint8_t val = input.buffer[ny * input.stride + nx];
+                if (val > max_val)
+                    max_val = val;
             }
         }
     }
@@ -293,12 +282,9 @@ __global__ void visualization_kernel(
     
     if (mask_ptr[x])
     {
-        // Formula: input + 0.5 * red * mask
-        // red = (255, 0, 0), so:
-        // R = R + 0.5 * 255 = R + 127
+        // input + 0.5 * red * mask => R = R + 127
         int new_r = pixel_ptr[x].r + 127;
-        pixel_ptr[x].r = (uint8_t)min(new_r, 255);
-        // G and B stay the same
+        pixel_ptr[x].r = (uint8_t)(new_r > 255 ? 255 : new_r);
     }
 }
 
@@ -420,7 +406,7 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
     
     // Motion mask calculation
     motion_mask_kernel<<<grid, block>>>(
-        device_in, device_background, device_motion_mask);
+        device_in, device_background, device_motion_mask, params.th_low);
     cudaDeviceSynchronize();
     
     // Morphological opening: erosion
@@ -483,10 +469,10 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
         }
     }
     
-    // Reconstruction: propagate markers to pixels > th_low
+    // Reconstruction
     bool has_changed = true;
     int iterations = 0;
-    const int max_iterations = 100;  // Limit iterations for performance
+    const int max_iterations = in.width * in.height;
     
     while (has_changed && iterations < max_iterations)
     {
@@ -500,8 +486,7 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
             
             for (int x = 0; x < in.width; ++x)
             {
-                // Skip if already activated or below low threshold
-                if (output_line[x] || mask_line[x] <= params.th_low)
+                if (output_line[x] || !mask_line[x])
                     continue;
                 
                 for (int dy = -1; dy <= 1; ++dy)

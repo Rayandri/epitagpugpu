@@ -7,10 +7,12 @@
 #include "cuda_runtime.h"
 
 #pragma pack(push, 1)
+#pragma pack(push, 1)
 struct rgb8
 {
   uint8_t r, g, b;
 };
+#pragma pack(pop)
 #pragma pack(pop)
 
 // View over a 2D buffer
@@ -89,27 +91,12 @@ template <class T>
 Image<T>::Image(Image&& other) noexcept
 {
   std::swap((ImageView<T>&)(*this), (ImageView<T>&)(other));
-  std::swap(this->deleter, other.deleter);
 }
 
 template <class T>
 Image<T>& Image<T>::operator=(Image&& other) noexcept
 {
-  // Free current buffer if any
-  if (this->buffer && this->deleter)
-    this->deleter(this->buffer);
-  
-  // Take ownership from other
-  this->buffer = other.buffer;
-  this->width = other.width;
-  this->height = other.height;
-  this->stride = other.stride;
-  this->deleter = other.deleter;
-  
-  // Clear other
-  other.buffer = nullptr;
-  other.deleter = nullptr;
-  
+  std::swap((ImageView<T>&)(*this), (ImageView<T>&)(other));
   return *this;
 }
 

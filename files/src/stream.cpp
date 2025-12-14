@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     return 1;
   }
   
-  // Initialize default parameters (per project spec)
+  // Initialize default parameters
   params.bg_uri = "";
   params.opening_size = 3;
   params.th_low = 30;
@@ -67,29 +67,31 @@ int main(int argc, char* argv[])
   my_code_init();
   cpt_init(&params);
 
-  // Create a GStreamer pipeline
+  // Create a GStreamer pipeline with videoflip to handle rotation metadata
   const char* pipe_str;
   if (output.empty())
-    pipe_str = "filesrc name=fsrc ! decodebin ! videoconvert ! video/x-raw, format=(string)RGB ! myfilter name=myfilter ! videoconvert ! fpsdisplaysink sync=false";
+    pipe_str = "filesrc name=fsrc ! decodebin ! videoflip method=automatic ! videoconvert ! video/x-raw, format=(string)RGB ! myfilter name=myfilter ! videoconvert ! fpsdisplaysink sync=false";
   else
-    pipe_str = "filesrc name=fsrc ! decodebin ! videoconvert ! video/x-raw, format=(string)RGB ! myfilter name=myfilter ! videoconvert ! video/x-raw, format=I420 ! x264enc ! mp4mux ! filesink name=fdst";
+    pipe_str = "filesrc name=fsrc ! decodebin ! videoflip method=automatic ! videoconvert ! video/x-raw, format=(string)RGB ! myfilter name=myfilter ! videoconvert ! video/x-raw, format=I420 ! x264enc ! mp4mux ! filesink name=fdst";
+
   GError *error = NULL;
   auto pipeline = gst_parse_launch(pipe_str, &error);
   if (!pipeline)
   {
-    g_printerr("[ERROR] Failed to create pipeline: %s\n", error ? error->message : "unknown error");
+    g_printerr("Failed to create pipeline: %s\n", error ? error->message : "unknown error");
     if (error) g_error_free(error);
     return 1;
   }
+
   auto filesrc = gst_bin_get_by_name (GST_BIN (pipeline), "fsrc");
-  if (!filesrc) {
-    g_printerr("Error: Could not find filesrc element!\n");
+  if (!filesrc)
+  {
+    g_printerr("Could not find filesrc element!\n");
     return 1;
   }
   g_object_set (filesrc, "location", filename.c_str(), NULL);
   g_object_unref (filesrc);
 
-  // Set device on the filter
   auto myfilter = gst_bin_get_by_name (GST_BIN (pipeline), "myfilter");
   if (myfilter)
   {
@@ -98,7 +100,7 @@ int main(int argc, char* argv[])
   }
   else
   {
-    g_printerr("Error: Could not find myfilter element!\n");
+    g_printerr("Could not find myfilter element!\n");
     return 1;
   }
 
