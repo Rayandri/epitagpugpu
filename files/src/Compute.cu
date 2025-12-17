@@ -303,26 +303,76 @@ __global__ void dilation_kernel(
     output.buffer[y * output.stride + x] = max_val;
 }
 
-__global__ void threshold_kernel(
-    ImageView<uint8_t> motion_mask,
+// Fused kernel: dilation + threshold in one pass
+__global__ void dilation_threshold_kernel(
     ImageView<uint8_t> input,
-    ImageView<uint8_t> output,
+    ImageView<uint8_t> hyst_input,
+    ImageView<uint8_t> hyst_output,
+    int radius,
     int th_low,
     int th_high)
 {
+    __shared__ uint8_t tile[BLOCK_SIZE + 2*MAX_RADIUS][BLOCK_SIZE + 2*MAX_RADIUS];
+    
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int tx = threadIdx.x;
+    int ty = threadIdx.y;
     
-    if (x >= motion_mask.width || y >= motion_mask.height)
+    int tile_x = tx + radius;
+    int tile_y = ty + radius;
+    
+    if (x < input.width && y < input.height)
+        tile[tile_y][tile_x] = input.buffer[y * input.stride + x];
+    else
+        tile[tile_y][tile_x] = 0;
+    
+    if (tx < radius) {
+        int hx = x - radius;
+        tile[tile_y][tx] = (hx >= 0 && y < input.height) ? input.buffer[y * input.stride + hx] : 0;
+        hx = x + BLOCK_SIZE;
+        tile[tile_y][tx + BLOCK_SIZE + radius] = (hx < input.width && y < input.height) ? input.buffer[y * input.stride + hx] : 0;
+    }
+    if (ty < radius) {
+        int hy = y - radius;
+        tile[ty][tile_x] = (hy >= 0 && x < input.width) ? input.buffer[hy * input.stride + x] : 0;
+        hy = y + BLOCK_SIZE;
+        tile[ty + BLOCK_SIZE + radius][tile_x] = (hy < input.height && x < input.width) ? input.buffer[hy * input.stride + x] : 0;
+    }
+    if (tx < radius && ty < radius) {
+        int hx = x - radius, hy = y - radius;
+        tile[ty][tx] = (hx >= 0 && hy >= 0) ? input.buffer[hy * input.stride + hx] : 0;
+        hx = x + BLOCK_SIZE; hy = y - radius;
+        tile[ty][tx + BLOCK_SIZE + radius] = (hx < input.width && hy >= 0) ? input.buffer[hy * input.stride + hx] : 0;
+        hx = x - radius; hy = y + BLOCK_SIZE;
+        tile[ty + BLOCK_SIZE + radius][tx] = (hx >= 0 && hy < input.height) ? input.buffer[hy * input.stride + hx] : 0;
+        hx = x + BLOCK_SIZE; hy = y + BLOCK_SIZE;
+        tile[ty + BLOCK_SIZE + radius][tx + BLOCK_SIZE + radius] = (hx < input.width && hy < input.height) ? input.buffer[hy * input.stride + hx] : 0;
+    }
+    
+    __syncthreads();
+    
+    if (x >= input.width || y >= input.height)
         return;
     
-    uint8_t* mask_ptr = motion_mask.buffer + y * motion_mask.stride;
-    uint8_t* input_ptr = input.buffer + y * input.stride;
-    uint8_t* output_ptr = output.buffer + y * output.stride;
+    // Dilation
+    uint8_t max_val = 0;
+    int radius_sq = radius * radius;
+    for (int dy = -radius; dy <= radius; ++dy)
+    {
+        for (int dx = -radius; dx <= radius; ++dx)
+        {
+            if (dx*dx + dy*dy <= radius_sq)
+            {
+                uint8_t val = tile[tile_y + dy][tile_x + dx];
+                if (val > max_val) max_val = val;
+            }
+        }
+    }
     
-    uint8_t val = mask_ptr[x];
-    input_ptr[x] = (val > th_low) ? 255 : 0;
-    output_ptr[x] = (val > th_high) ? 255 : 0;
+    // Threshold directly on dilated value
+    hyst_input.buffer[y * hyst_input.stride + x] = (max_val > th_low) ? 255 : 0;
+    hyst_output.buffer[y * hyst_output.stride + x] = (max_val > th_high) ? 255 : 0;
 }
 
 __global__ void hysteresis_reconstruction_kernel(
@@ -511,15 +561,12 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
     motion_mask_kernel<<<grid, block>>>(
         device_in, device_background, device_motion_mask);
     
-    // Morphological opening: erosion then dilation
+    // Morphological opening: erosion + fused dilation/threshold
     int opening_radius = params.opening_size / 2;
     erosion_kernel<<<grid, block>>>(device_motion_mask, device_temp_mask, opening_radius);
-    dilation_kernel<<<grid, block>>>(device_temp_mask, device_motion_mask, opening_radius);
-    
-    // Threshold for hysteresis
-    threshold_kernel<<<grid, block>>>(
-        device_motion_mask, device_hysteresis_input, device_hysteresis_output,
-        params.th_low, params.th_high);
+    dilation_threshold_kernel<<<grid, block>>>(
+        device_temp_mask, device_hysteresis_input, device_hysteresis_output,
+        opening_radius, params.th_low, params.th_high);
     
     int host_has_changed = 1;
     int iterations = 0;
