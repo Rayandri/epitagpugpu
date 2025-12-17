@@ -18,7 +18,7 @@ Fichiers détaillés dans `/benchmarks/`
 
 ---
 
-## v1.0 - Baseline (17 déc 2025 à 21:41)
+## v1.0 - Baseline
 
 | Vidéo | CPU (s) | GPU (s) | Speedup |
 |-------|---------|---------|---------|
@@ -34,7 +34,7 @@ Fichiers détaillés dans `/benchmarks/`
 
 ---
 
-## v1.1 - Hystérésis GPU (17 déc 2025 à 22:04)
+## v1.1 - Hystérésis GPU
 
 | Vidéo | CPU (s) | GPU v1.1 (s) | Speedup vs CPU | Gain vs v1.0 |
 |-------|---------|--------------|----------------|--------------|
@@ -50,7 +50,7 @@ Fichiers détaillés dans `/benchmarks/`
 
 ---
 
-## v1.2 - Sans cudaDeviceSynchronize() (17 déc 2025 à 22:09)
+## v1.2 - Sans cudaDeviceSynchronize()
 
 | Vidéo | CPU (s) | GPU v1.2 (s) | Speedup vs CPU |
 |-------|---------|--------------|----------------|
