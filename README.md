@@ -7,7 +7,6 @@ Real-time motion detection using GPU acceleration with CUDA.
 - Rayan Drissi
 - Emre Ulusoy
 - Marc Guillemot
-- Charlie Chaplin
 
 ## Requirements
 
