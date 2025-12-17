@@ -194,10 +194,10 @@ lil\_clown & 28.70 & 9.49 & 10.09 & 10.31 & 9.36 & \textbf{7.96} \\
 \hline
 \textbf{Version} & \textbf{Optimisation} & \textbf{Impact} & \textbf{Explication} \\
 \hline
-v1.0 $\rightarrow$ v1.1 & Hystérésis GPU & \textbf{+346\%} & Élimination transferts CPU$\leftrightarrow$GPU \\
-v1.1 $\rightarrow$ v1.2 & Sans cudaDeviceSync & $\approx$ 0\% & Déjà pipeliné par le driver \\
-v1.2 $\rightarrow$ v1.3 & Shared memory & $\approx$ 0\% & Rayon trop petit (3px) \\
-v1.3 $\rightarrow$ v1.4 & Fusion kernels & $\approx$ 0\% & Cache L2 déjà efficace \\
+v1.0 $\rightarrow$ v1.1 & Hystérésis GPU & \textbf{+375\%} & Élimination transferts CPU$\leftrightarrow$GPU \\
+v1.1 $\rightarrow$ v1.2 & Sans cudaDeviceSync & $-3.4\%$ & Déjà pipeliné par le driver \\
+v1.2 $\rightarrow$ v1.3 & Shared memory & $-2.9\%$ & Rayon trop petit (3px) \\
+v1.3 $\rightarrow$ v1.4 & Fusion kernels & $-0.6\%$ & Cache L2 déjà efficace \\
 \hline
 \end{tabular}
 \end{center}
