@@ -1,0 +1,26 @@
+=== BENCHMARK GPU ONLY ===
+Date: Wed Dec 17 22:04:51 CET 2025
+GPU: NVIDIA GeForce RTX 5060
+
+--- ACET.mp4 ---
+[GPU] 5.240849218s
+
+--- lil_clown_studio.mp4 ---
+[GPU] 9.490521564s
+
+--- 1023-142621257_large.mp4 ---
+[GPU] 9.520099710s
+
+--- 27999-366978301_large.mp4 ---
+[GPU] 7.367632182s
+
+--- 3630-172488409_large.mp4 ---
+[GPU] 11.085523344s
+
+--- 6387-191695740_large.mp4 ---
+[GPU] 8.777311267s
+
+--- 20895-313083562_large.mp4 ---
+[GPU] 23.208964090s
+
+=== COMPLETE ===

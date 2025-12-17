@@ -236,12 +236,32 @@ __global__ void dilation_kernel(
     output.buffer[y * output.stride + x] = max_val;
 }
 
-// Kernel for hysteresis reconstruction (one iteration)
+__global__ void threshold_kernel(
+    ImageView<uint8_t> motion_mask,
+    ImageView<uint8_t> input,
+    ImageView<uint8_t> output,
+    int th_low,
+    int th_high)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    
+    if (x >= motion_mask.width || y >= motion_mask.height)
+        return;
+    
+    uint8_t* mask_ptr = motion_mask.buffer + y * motion_mask.stride;
+    uint8_t* input_ptr = input.buffer + y * input.stride;
+    uint8_t* output_ptr = output.buffer + y * output.stride;
+    
+    uint8_t val = mask_ptr[x];
+    input_ptr[x] = (val > th_low) ? 255 : 0;
+    output_ptr[x] = (val > th_high) ? 255 : 0;
+}
+
 __global__ void hysteresis_reconstruction_kernel(
     ImageView<uint8_t> input,
-    ImageView<uint8_t> marker,
     ImageView<uint8_t> output,
-    bool* has_changed)
+    int* has_changed)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -252,10 +272,9 @@ __global__ void hysteresis_reconstruction_kernel(
     uint8_t* output_ptr = output.buffer + y * output.stride;
     uint8_t* input_ptr = input.buffer + y * input.stride;
     
-    if (output_ptr[x] || !input_ptr[x])  // Already processed or too low
+    if (output_ptr[x] || !input_ptr[x])
         return;
     
-    // Check neighbors
     for (int dy = -1; dy <= 1; ++dy)
     {
         for (int dx = -1; dx <= 1; ++dx)
@@ -269,7 +288,7 @@ __global__ void hysteresis_reconstruction_kernel(
                 if (output.buffer[ny * output.stride + nx])
                 {
                     output_ptr[x] = 255;
-                    *has_changed = true;
+                    atomicOr(has_changed, 1);
                     return;
                 }
             }
@@ -310,8 +329,9 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
     static Image<rgb8> device_static_bg;
     static Image<uint8_t> device_motion_mask;
     static Image<uint8_t> device_temp_mask;
-    static Image<uint8_t> device_marker;
+    static Image<uint8_t> device_hysteresis_input;
     static Image<uint8_t> device_hysteresis_output;
+    static int* device_has_changed = nullptr;
     static bool initialized = false;
     static int frame_count = 0;
     static uint64_t last_sample_time = 0;
@@ -356,8 +376,11 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
         device_background = Image<rgb8>(in.width, in.height, true);
         device_motion_mask = Image<uint8_t>(in.width, in.height, true);
         device_temp_mask = Image<uint8_t>(in.width, in.height, true);
-        device_marker = Image<uint8_t>(in.width, in.height, true);
+        device_hysteresis_input = Image<uint8_t>(in.width, in.height, true);
         device_hysteresis_output = Image<uint8_t>(in.width, in.height, true);
+        
+        if (device_has_changed) cudaFree(device_has_changed);
+        cudaMalloc(&device_has_changed, sizeof(int));
         
         // Load static background if provided
         if (params.bg_uri && strlen(params.bg_uri) > 0)
@@ -432,106 +455,24 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
     dilation_kernel<<<grid, block>>>(device_temp_mask, device_motion_mask, opening_radius);
     cudaDeviceSynchronize();
     
-    // Initialize markers for hysteresis (pixels > th_high)
-    // We'll do this in a simple kernel or reuse motion_mask
-    // For now, we'll use a threshold kernel
-    // Actually, we can do this in the reconstruction kernel by checking th_high
+    threshold_kernel<<<grid, block>>>(
+        device_motion_mask, device_hysteresis_input, device_hysteresis_output,
+        params.th_low, params.th_high);
+    cudaDeviceSynchronize();
     
-    // Initialize hysteresis output with markers
-    // Create a simple kernel to initialize markers and output
-    // For simplicity, we'll do threshold in CPU or create another kernel
-    // Let's create a threshold kernel
-    // Actually, let's do it inline in the reconstruction
-    
-    // Hysteresis thresholding - initialize output
-    // We need a kernel to set markers and initialize output
-    // For now, let's use a simple approach: copy motion_mask to marker with threshold
-    // We'll create a threshold kernel
-    
-    // Simplified: use motion_mask directly and do hysteresis in CPU for now
-    // Or create proper kernels
-    
-    // Copy motion_mask to host for hysteresis (temporary solution)
-    // Actually, let's implement proper CUDA hysteresis
-    
-    // Initialize marker and output
-    // We need kernels for threshold operations
-    // For now, let's do a simplified version
-    
-    // Copy motion mask back to host, do hysteresis on CPU, then copy back
-    // This is not optimal but will work
-    Image<uint8_t> host_motion_mask(in.width, in.height, false);
-    cudaMemcpy2D(host_motion_mask.buffer, host_motion_mask.stride,
-                device_motion_mask.buffer, device_motion_mask.stride,
-                in.width * sizeof(uint8_t), in.height, cudaMemcpyDeviceToHost);
-    
-    // Do hysteresis on CPU (temporary - should be on GPU)
-    Image<uint8_t> host_marker(in.width, in.height, false);
-    Image<uint8_t> host_output(in.width, in.height, false);
-    
-    // Initialize markers
-    for (int y = 0; y < in.height; ++y)
-    {
-        uint8_t* mask_line = host_motion_mask.buffer + y * host_motion_mask.stride;
-        uint8_t* marker_line = host_marker.buffer + y * host_marker.stride;
-        uint8_t* output_line = host_output.buffer + y * host_output.stride;
-        
-        for (int x = 0; x < in.width; ++x)
-        {
-            marker_line[x] = (mask_line[x] > params.th_high) ? 255 : 0;
-            output_line[x] = marker_line[x];
-        }
-    }
-    
-    // Reconstruction: propagate markers to pixels > th_low
-    bool has_changed = true;
+    int host_has_changed = 1;
     int iterations = 0;
-    const int max_iterations = 100;  // Limit iterations for performance
+    const int max_iterations = 100;
     
-    while (has_changed && iterations < max_iterations)
+    while (host_has_changed && iterations < max_iterations)
     {
-        has_changed = false;
+        cudaMemset(device_has_changed, 0, sizeof(int));
+        hysteresis_reconstruction_kernel<<<grid, block>>>(
+            device_hysteresis_input, device_hysteresis_output, device_has_changed);
+        cudaDeviceSynchronize();
+        cudaMemcpy(&host_has_changed, device_has_changed, sizeof(int), cudaMemcpyDeviceToHost);
         iterations++;
-        
-        for (int y = 0; y < in.height; ++y)
-        {
-            uint8_t* output_line = host_output.buffer + y * host_output.stride;
-            uint8_t* mask_line = host_motion_mask.buffer + y * host_motion_mask.stride;
-            
-            for (int x = 0; x < in.width; ++x)
-            {
-                // Skip if already activated or below low threshold
-                if (output_line[x] || mask_line[x] <= params.th_low)
-                    continue;
-                
-                for (int dy = -1; dy <= 1; ++dy)
-                {
-                    for (int dx = -1; dx <= 1; ++dx)
-                    {
-                        if (dx == 0 && dy == 0) continue;
-                        
-                        int nx = x + dx;
-                        int ny = y + dy;
-                        if (nx >= 0 && nx < in.width && ny >= 0 && ny < in.height)
-                        {
-                            if (host_output.buffer[ny * host_output.stride + nx])
-                            {
-                                output_line[x] = 255;
-                                has_changed = true;
-                                goto next_pixel_cu;
-                            }
-                        }
-                    }
-                }
-                next_pixel_cu:;
-            }
-        }
     }
-    
-    // Copy back to device
-    cudaMemcpy2D(device_hysteresis_output.buffer, device_hysteresis_output.stride,
-                host_output.buffer, host_output.stride,
-                in.width * sizeof(uint8_t), in.height, cudaMemcpyHostToDevice);
     
     // Visualization - skip during first frames while background is being estimated
     if (frame_count >= params.bg_number_frame)
