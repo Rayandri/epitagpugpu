@@ -2,7 +2,7 @@
 
 Real-time motion detection using GPU acceleration with CUDA.
 
-**[Slides](https://epitagpugpu.vercel.app/)** | **[Rapport PDF](rapport.pdf)**
+**[Slides](https://epitagpugpu.vercel.app/)** | **[Rapport PDF](rapport.pdf)** | **[GitHub](https://github.com/Rayandri/epitagpugpu)**
 
 ## Authors
 

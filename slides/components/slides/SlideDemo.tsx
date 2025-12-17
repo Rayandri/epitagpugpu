@@ -50,14 +50,6 @@ export function SlideDemo() {
         </div>
       </motion.div>
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="text-white/40 text-sm"
-      >
-        Placez votre vidéo de démo dans <code className="bg-white/10 px-2 py-1 rounded">public/demo.mp4</code>
-      </motion.p>
     </div>
   );
 }
