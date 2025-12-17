@@ -1,16 +1,10 @@
-GPGPU - Détection de Mouvement en Temps Réel
-============================================
+Le ZIP peut causer des problèmes (symlinks, fichiers manquants).
+Nous recommandons d'utiliser le repository GitHub :
 
-Merci d'avoir téléchargé notre projet !
-
-Les fichiers PDF et slides ne sont pas inclus dans le ZIP.
-Retrouvez-les sur GitHub :
-
-  GitHub    : https://github.com/Rayandri/epitagpugpu
-  Slides    : https://epitagpugpu.vercel.app/
-  Rapport   : https://github.com/Rayandri/epitagpugpu/blob/main/latex/rapport.pdf
+  GitHub  : https://github.com/Rayandri/epitagpugpu
+  Slides  : https://epitagpugpu.vercel.app/
+  Rapport : https://github.com/Rayandri/epitagpugpu/blob/main/latex/rapport.pdf
 
 ---
-Rayan Drissi, Emre Ulusoy, Marc Guillemot, Paul Abi Saad
+Rayan Drissi, Emre Ulusoy, Marc Guillemot
 EPITA ING3 - GPGPU 2025
-
