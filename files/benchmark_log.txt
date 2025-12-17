@@ -1,0 +1,13 @@
+=== BENCHMARK IRGPU ===
+Date: Wed Dec 17 21:39:41 CET 2025
+GPU: NVIDIA GeForce RTX 5060
+
+--- Testing: ACET.mp4 ---
+[CPU] Processing...
+[CPU] Time: 13.413735150s
+[GPU] Processing...
+[GPU] Time: 8.169802966s
+[SPEEDUP] 1.64x
+
+--- Testing: lil_clown_studio.mp4 ---
+[CPU] Processing...

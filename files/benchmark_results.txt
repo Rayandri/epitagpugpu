@@ -1,19 +1,54 @@
 === BENCHMARK IRGPU ===
-Date: Wed Dec 17 21:34:55 CET 2025
+Date: Wed Dec 17 21:41:23 CET 2025
 GPU: NVIDIA GeForce RTX 5060
 
 --- Testing: ACET.mp4 ---
 [CPU] Processing...
-[CPU] Time: 14.870491474s
+[CPU] Time: 13.192906399s
 [GPU] Processing...
-[GPU] Time: 10.054187985s
-[SPEEDUP] 1.47x
+[GPU] Time: 6.257179361s
+[SPEEDUP] 2.10x
 
 --- Testing: lil_clown_studio.mp4 ---
 [CPU] Processing...
-[CPU] Time: 39.205241098s
+[CPU] Time: 40.617143026s
 [GPU] Processing...
-[GPU] Time: 29.347497606s
-[SPEEDUP] 1.33x
+[GPU] Time: 28.695423065s
+[SPEEDUP] 1.41x
+
+--- Testing: 1023-142621257_large.mp4 ---
+[CPU] Processing...
+[CPU] Time: 72.271484924s
+[GPU] Processing...
+[GPU] Time: 61.087474308s
+[SPEEDUP] 1.18x
+
+--- Testing: 27999-366978301_large.mp4 ---
+[CPU] Processing...
+[CPU] Time: 37.600862836s
+[GPU] Processing...
+[GPU] Time: 33.624964736s
+[SPEEDUP] 1.11x
+
+--- Testing: 3630-172488409_large.mp4 ---
+[CPU] Processing...
+[CPU] Time: 64.261153339s
+[GPU] Processing...
+[GPU] Time: 51.811908891s
+[SPEEDUP] 1.24x
+
+--- Testing: 6387-191695740_large.mp4 ---
+[CPU] Processing...
+[CPU] Time: 69.013898902s
+[GPU] Processing...
+[GPU] Time: 63.796848284s
+[SPEEDUP] 1.08x
+
+--- Testing: 20895-313083562_large.mp4 ---
+[CPU] Processing...
+[CPU] Time: 164.566627109s
+[GPU] Processing...
+[GPU] Time: 142.120319874s
+[SPEEDUP] 1.15x
 
 === BENCHMARK COMPLETE ===
