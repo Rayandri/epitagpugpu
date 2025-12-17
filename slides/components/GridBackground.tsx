@@ -10,40 +10,40 @@ function FallingParticle({ delay, x }: { delay: number; x: number }) {
       style={{ left: `${x}%`, top: -20 }}
       initial={{ height: 0, opacity: 0 }}
       animate={{ 
-        y: [0, window.innerHeight + 100],
+        y: [0, 1200],
         height: [0, 30, 50, 30, 0],
         opacity: [0, 1, 1, 1, 0],
       }}
       transition={{
-        duration: 2 + Math.random() * 2,
+        duration: 3,
         delay,
         repeat: Infinity,
-        repeatDelay: Math.random() * 5,
+        repeatDelay: 5,
         ease: "linear",
       }}
     />
   );
 }
 
-function SideStream({ side, delay }: { side: "left" | "right"; delay: number }) {
+function SideStream({ side, delay, yPos }: { side: "left" | "right"; delay: number; yPos: number }) {
   const isLeft = side === "left";
   return (
     <motion.div
       className="absolute h-0.5 bg-gradient-to-r from-transparent via-[#76B900] to-transparent"
       style={{ 
-        top: `${20 + Math.random() * 60}%`,
+        top: `${yPos}%`,
         [isLeft ? "left" : "right"]: -100,
-        width: 80 + Math.random() * 40,
+        width: 100,
       }}
       animate={{ 
-        x: isLeft ? [0, window.innerWidth + 200] : [0, -(window.innerWidth + 200)],
+        x: isLeft ? [0, 2200] : [0, -2200],
         opacity: [0, 1, 1, 0],
       }}
       transition={{
-        duration: 3 + Math.random() * 2,
+        duration: 4,
         delay,
         repeat: Infinity,
-        repeatDelay: Math.random() * 8,
+        repeatDelay: 8,
         ease: "linear",
       }}
     />
@@ -186,8 +186,9 @@ export function GridBackground() {
   const sideStreams = useMemo(() => 
     Array.from({ length: 10 }, (_, i) => ({
       id: i,
-      side: i % 2 === 0 ? "left" : "right" as "left" | "right",
-      delay: Math.random() * 8,
+      side: (i % 2 === 0 ? "left" : "right") as "left" | "right",
+      delay: i * 0.8,
+      yPos: 15 + i * 8,
     })), []);
 
   return (
@@ -215,7 +216,7 @@ export function GridBackground() {
       ))}
 
       {sideStreams.map((s) => (
-        <SideStream key={s.id} side={s.side} delay={s.delay} />
+        <SideStream key={s.id} side={s.side} delay={s.delay} yPos={s.yPos} />
       ))}
 
       <DataFlow />
