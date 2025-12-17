@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { GridBackground } from "@/components/GridBackground";
 import { TransitionEffect } from "@/components/TransitionEffect";
+import { SlideWrapper } from "@/components/SlideWrapper";
 import { SlideTitle } from "@/components/slides/SlideTitle";
 import { SlideContext } from "@/components/slides/SlideContext";
 import { SlidePipeline } from "@/components/slides/SlidePipeline";
@@ -190,7 +191,8 @@ export default function Home() {
   const currentTransition = useMemo(() => getTransition(currentAnimationType), [currentAnimationType]);
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-[#0a0a0a]" style={{ perspective: "1500px" }}>
+    <SlideWrapper>
+    <main className="relative w-full h-full overflow-hidden bg-[#0a0a0a]" style={{ perspective: "1500px" }}>
       <GridBackground />
       
       <AnimatePresence>
@@ -260,5 +262,6 @@ export default function Home() {
         </div>
       </motion.div>
     </main>
+    </SlideWrapper>
   );
 }
