@@ -39,7 +39,7 @@ export function SlideTitle() {
         transition={{ delay: 0.9 }}
         className="flex gap-8 mt-8"
       >
-        {["Rayan Drissi", "Emre Ulusoy", "Marc Guillemot", "Charlie Chaplin"].map((name, i) => (
+        {["Rayan Drissi", "Emre Ulusoy", "Marc Guillemot", "Paul Abi Saad"].map((name, i) => (
           <motion.div
             key={name}
             initial={{ opacity: 0, scale: 0 }}
