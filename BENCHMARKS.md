@@ -4,6 +4,18 @@
 **CPU** : AMD Ryzen 9 5950X (16 cores, 32 threads)  
 **RAM** : 58 Go
 
+Fichiers détaillés dans `/benchmarks/`
+
+---
+
+## Résumé des versions
+
+| Version | Description | Speedup moyen vs CPU |
+|---------|-------------|---------------------|
+| v1.0 | Baseline (hystérésis CPU) | 1.32x |
+| v1.1 | Hystérésis full GPU | **8.5x** |
+| v1.2 | Sans cudaDeviceSynchronize() | ~8.5x |
+
 ---
 
 ## v1.0 - Baseline (17 déc 2025 à 21:41)
@@ -18,43 +30,49 @@
 | 6387-191695740_large.mp4 | 69.01 | 63.80 | 1.08x |
 | 20895-313083562_large.mp4 | 164.57 | 142.12 | 1.15x |
 
-**Speedup moyen CPU→GPU** : ~1.32x
+**Speedup moyen CPU→GPU v1.0** : 1.32x
 
 ---
 
 ## v1.1 - Hystérésis GPU (17 déc 2025 à 22:04)
 
-| Vidéo | v1.0 GPU | v1.1 GPU | Gain |
-|-------|----------|----------|------|
-| ACET.mp4 | 6.26 | 5.24 | 1.2x |
-| lil_clown_studio.mp4 | 28.70 | 9.49 | **3.0x** |
-| 1023-142621257_large.mp4 | 61.09 | 9.52 | **6.4x** |
-| 27999-366978301_large.mp4 | 33.62 | 7.37 | **4.6x** |
-| 3630-172488409_large.mp4 | 51.81 | 11.09 | **4.7x** |
-| 6387-191695740_large.mp4 | 63.80 | 8.78 | **7.3x** |
-| 20895-313083562_large.mp4 | 142.12 | 23.21 | **6.1x** |
+| Vidéo | CPU (s) | GPU v1.1 (s) | Speedup vs CPU | Gain vs v1.0 |
+|-------|---------|--------------|----------------|--------------|
+| ACET.mp4 | 13.19 | 5.24 | **2.5x** | 1.2x |
+| lil_clown_studio.mp4 | 40.62 | 9.49 | **4.3x** | 3.0x |
+| 1023-142621257_large.mp4 | 72.27 | 9.52 | **7.6x** | 6.4x |
+| 27999-366978301_large.mp4 | 37.60 | 7.37 | **5.1x** | 4.6x |
+| 3630-172488409_large.mp4 | 64.26 | 11.09 | **5.8x** | 4.7x |
+| 6387-191695740_large.mp4 | 69.01 | 8.78 | **7.9x** | 7.3x |
+| 20895-313083562_large.mp4 | 164.57 | 23.21 | **7.1x** | 6.1x |
 
-**Gain moyen v1.0→v1.1** : ~4.7x (optimisation hystérésis GPU)
+**Speedup moyen CPU→GPU v1.1** : **5.8x**
 
-## Analyse
+---
 
-### Bottlenecks identifiés
-1. **Hystérésis sur CPU** (lignes 463-529 de Compute.cu) - transferts GPU→CPU→GPU
-2. **cudaDeviceSynchronize()** après chaque kernel - empêche le pipelining
-3. **Transferts Host↔Device** à chaque frame
-4. **Pas de shared memory** pour la morphologie
+## v1.2 - Sans cudaDeviceSynchronize() (17 déc 2025 à 22:09)
 
-### Kernels GPU implémentés
-- `init_curand_kernel` - Initialisation RNG
-- `background_estimation_kernel` - Weighted Reservoir Sampling
-- `motion_mask_kernel` - Différence RGB
-- `erosion_kernel` - Min voisinage (disque)
-- `dilation_kernel` - Max voisinage (disque)
-- `visualization_kernel` - Overlay rouge
+| Vidéo | CPU (s) | GPU v1.2 (s) | Speedup vs CPU |
+|-------|---------|--------------|----------------|
+| ACET.mp4 | 13.19 | 5.23 | **2.5x** |
+| lil_clown_studio.mp4 | 40.62 | 10.09 | **4.0x** |
+| 1023-142621257_large.mp4 | 72.27 | 12.21 | **5.9x** |
+| 27999-366978301_large.mp4 | 37.60 | 5.43 | **6.9x** |
+| 3630-172488409_large.mp4 | 64.26 | 10.94 | **5.9x** |
+| 6387-191695740_large.mp4 | 69.01 | 10.85 | **6.4x** |
+| 20895-313083562_large.mp4 | 164.57 | 21.66 | **7.6x** |
 
-### Pistes d'optimisation
-- [ ] Hystérésis full GPU avec kernel itératif + flag atomique
-- [ ] Shared memory pour érosion/dilatation
-- [ ] CUDA streams pour overlapper compute et transferts
-- [ ] Double buffering pour réduire la latence
+**Speedup moyen CPU→GPU v1.2** : **5.6x**
 
+---
+
+## Analyse des bottlenecks
+
+### Optimisations appliquées
+- [x] **v1.1** : Hystérésis full GPU (kernel itératif + flag atomique)
+- [x] **v1.2** : Suppression cudaDeviceSynchronize() inutiles
+
+### Optimisations restantes
+- [ ] **v1.3** : Shared memory pour érosion/dilatation
+- [ ] **v1.4** : Fusion de kernels (motion_mask + threshold)
+- [ ] **v1.5** : CUDA streams pour overlapping
