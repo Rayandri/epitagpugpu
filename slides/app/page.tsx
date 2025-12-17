@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GridBackground } from "@/components/GridBackground";
+import { TransitionEffect } from "@/components/TransitionEffect";
 import { SlideTitle } from "@/components/slides/SlideTitle";
 import { SlideContext } from "@/components/slides/SlideContext";
 import { SlidePipeline } from "@/components/slides/SlidePipeline";
@@ -30,27 +31,36 @@ const slides = [
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionKey, setTransitionKey] = useState(0);
+
+  const triggerTransition = useCallback((newDirection: number) => {
+    setDirection(newDirection);
+    setIsTransitioning(true);
+    setTransitionKey(prev => prev + 1);
+    setTimeout(() => setIsTransitioning(false), 600);
+  }, []);
 
   const goToSlide = useCallback((index: number) => {
-    if (index >= 0 && index < slides.length) {
-      setDirection(index > currentSlide ? 1 : -1);
+    if (index >= 0 && index < slides.length && index !== currentSlide) {
+      triggerTransition(index > currentSlide ? 1 : -1);
       setCurrentSlide(index);
     }
-  }, [currentSlide]);
+  }, [currentSlide, triggerTransition]);
 
   const nextSlide = useCallback(() => {
     if (currentSlide < slides.length - 1) {
-      setDirection(1);
+      triggerTransition(1);
       setCurrentSlide(currentSlide + 1);
     }
-  }, [currentSlide]);
+  }, [currentSlide, triggerTransition]);
 
   const prevSlide = useCallback(() => {
     if (currentSlide > 0) {
-      setDirection(-1);
+      triggerTransition(-1);
       setCurrentSlide(currentSlide - 1);
     }
-  }, [currentSlide]);
+  }, [currentSlide, triggerTransition]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -100,6 +110,12 @@ export default function Home() {
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#0a0a0a]" style={{ perspective: "1500px" }}>
       <GridBackground />
+      
+      <AnimatePresence>
+        {isTransitioning && (
+          <TransitionEffect key={transitionKey} direction={direction} />
+        )}
+      </AnimatePresence>
       
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
