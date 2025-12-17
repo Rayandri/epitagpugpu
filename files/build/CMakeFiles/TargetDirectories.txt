@@ -1,5 +1,0 @@
-/home/rayan/dev/epita/ing/majeur/gpgppu/epitagpugpu/files/build/CMakeFiles/stb_image.dir
-/home/rayan/dev/epita/ing/majeur/gpgppu/epitagpugpu/files/build/CMakeFiles/Compute.dir
-/home/rayan/dev/epita/ing/majeur/gpgppu/epitagpugpu/files/build/CMakeFiles/stream.dir
-/home/rayan/dev/epita/ing/majeur/gpgppu/epitagpugpu/files/build/CMakeFiles/edit_cache.dir
-/home/rayan/dev/epita/ing/majeur/gpgppu/epitagpugpu/files/build/CMakeFiles/rebuild_cache.dir
