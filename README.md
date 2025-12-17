@@ -2,11 +2,14 @@
 
 Real-time motion detection using GPU acceleration with CUDA.
 
+**[Slides](https://epitagpugpu.vercel.app/)** | **[Rapport PDF](rapport.pdf)**
+
 ## Authors
 
 - Rayan Drissi
 - Emre Ulusoy
 - Marc Guillemot
+- Paul Abi Saad
 
 ## Requirements
 

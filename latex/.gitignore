@@ -1,0 +1,15 @@
+*.aux
+*.log
+*.out
+*.toc
+*.maf
+*.mtc*
+*.lof
+*.lot
+*.bbl
+*.blg
+*.nav
+*.snm
+*.vrb
+*.synctex.gz
+
