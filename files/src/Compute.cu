@@ -438,27 +438,21 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
         background_estimation_kernel<<<grid, block>>>(
             device_in, device_reservoirs, device_rng_states.buffer,
             device_background, should_sample);
-        cudaDeviceSynchronize();
     }
     
     // Motion mask calculation
     motion_mask_kernel<<<grid, block>>>(
         device_in, device_background, device_motion_mask);
-    cudaDeviceSynchronize();
     
-    // Morphological opening: erosion
+    // Morphological opening: erosion then dilation
     int opening_radius = params.opening_size / 2;
     erosion_kernel<<<grid, block>>>(device_motion_mask, device_temp_mask, opening_radius);
-    cudaDeviceSynchronize();
-    
-    // Morphological opening: dilation
     dilation_kernel<<<grid, block>>>(device_temp_mask, device_motion_mask, opening_radius);
-    cudaDeviceSynchronize();
     
+    // Threshold for hysteresis
     threshold_kernel<<<grid, block>>>(
         device_motion_mask, device_hysteresis_input, device_hysteresis_output,
         params.th_low, params.th_high);
-    cudaDeviceSynchronize();
     
     int host_has_changed = 1;
     int iterations = 0;
@@ -478,7 +472,6 @@ void compute_cu(ImageView<rgb8> in, const Parameters& params, uint64_t timestamp
     if (frame_count >= params.bg_number_frame)
     {
         visualization_kernel<<<grid, block>>>(device_in, device_hysteresis_output);
-        cudaDeviceSynchronize();
     }
     
     // Copy result back to host
