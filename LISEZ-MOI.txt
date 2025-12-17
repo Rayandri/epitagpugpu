@@ -1,4 +1,4 @@
-Le ZIP peut causer des problèmes (symlinks, fichiers manquants).
+Le ZIP peut causer des problèmes (symlinks, ...).
 Nous recommandons d'utiliser le repository GitHub :
 
   GitHub  : https://github.com/Rayandri/epitagpugpu
