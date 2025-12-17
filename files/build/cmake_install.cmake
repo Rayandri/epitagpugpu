@@ -1,4 +1,4 @@
-# Install script for directory: /home/gma/epitagpugpu/files
+# Install script for directory: /home/rayan/dev/epita/ing/majeur/gpgppu/epitagpugpu/files
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/gma/epitagpugpu/files/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/rayan/dev/epita/ing/majeur/gpgppu/epitagpugpu/files/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
