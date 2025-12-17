@@ -1,0 +1,208 @@
+% !TEX program = lualatex
+\documentclass[11pt,a4paper,french]{article}
+\usepackage{rayanlib}
+
+\def\authorvar{Rayan Drissi, Emre Ulusoy, Marc Guillemot, Charlie Chaplin}
+\def\classevar{ING3}
+\def\anneevar{2025}
+
+\begin{document}
+
+\stylizeDocSpe{GPGPU}{Projet IRGPU}{Détection de mouvement}{Calcul sur GPU}
+
+\section{Introduction}
+
+Ce rapport présente notre implémentation d'un système de détection de mouvement en temps réel utilisant le GPU. L'objectif est de traiter un flux vidéo via GStreamer et d'identifier les zones en mouvement par soustraction de fond.
+
+\subsection{Contexte}
+
+La détection de mouvement est une tâche fondamentale en vision par ordinateur. Elle consiste à identifier les pixels qui diffèrent significativement d'un modèle de fond estimé. Cette opération est particulièrement adaptée au parallélisme massif offert par les GPU.
+
+\subsection{Pipeline de traitement}
+
+Notre pipeline se compose de 4 étapes principales :
+
+\begin{enumerate}
+    \item \textbf{Estimation du fond} : Weighted Reservoir Sampling
+    \item \textbf{Masque de mouvement} : Différence RGB avec le fond
+    \item \textbf{Filtrage morphologique} : Ouverture (érosion + dilatation)
+    \item \textbf{Hystérésis} : Double seuillage avec reconstruction
+\end{enumerate}
+
+\section{Choix d'implémentation}
+
+\subsection{Estimation du fond}
+
+\begin{definition*}{Weighted Reservoir Sampling}{}
+Pour chaque pixel, on maintient $k=4$ réservoirs contenant une couleur RGB et un poids. Lors de l'échantillonnage :
+\begin{itemize}
+    \item Si un réservoir correspond (distance RGB $< 30$), on incrémente son poids
+    \item Sinon, on remplace le réservoir de poids minimal avec probabilité inversement proportionnelle à son poids
+\end{itemize}
+Le fond est la couleur du réservoir de poids maximal.
+\end{definition*}
+
+\textbf{Pourquoi ce choix ?} Cette méthode s'adapte naturellement aux scènes avec plusieurs fonds alternés (ex: feuilles qui bougent) contrairement à une simple moyenne mobile.
+
+\subsection{Morphologie}
+
+L'ouverture morphologique (érosion puis dilatation) permet d'éliminer le bruit tout en préservant les grandes régions. Nous utilisons un \textbf{élément structurant en forme de disque} pour éviter les artefacts directionnels.
+
+\subsection{Hystérésis}
+
+\begin{definition*}{Double seuillage avec reconstruction}{}
+\begin{enumerate}
+    \item Les pixels avec score $> T_{high}$ sont marqués comme mouvement certain
+    \item Les pixels avec score $> T_{low}$ connectés à un pixel certain sont également marqués
+    \item Itération jusqu'à convergence
+\end{enumerate}
+\end{definition*}
+
+\section{Implémentation GPU}
+
+\subsection{Kernels CUDA}
+
+Tous les traitements sont implémentés en CUDA :
+
+\begin{itemize}
+    \item \texttt{background\_estimation\_kernel} : Mise à jour des réservoirs avec cuRAND
+    \item \texttt{motion\_mask\_kernel} : Calcul de la différence RGB
+    \item \texttt{erosion\_kernel} / \texttt{dilation\_kernel} : Morphologie avec élément disque
+    \item \texttt{hysteresis\_reconstruction\_kernel} : Propagation itérative avec flag atomique
+    \item \texttt{visualization\_kernel} : Overlay rouge sur les zones en mouvement
+\end{itemize}
+
+\subsection{Optimisation clé : Hystérésis GPU}
+
+L'optimisation majeure a été le portage de l'hystérésis sur GPU. La version initiale effectuait :
+
+\begin{enumerate}
+    \item Copie GPU $\rightarrow$ CPU
+    \item Boucle d'hystérésis sur CPU (jusqu'à 100 itérations)
+    \item Copie CPU $\rightarrow$ GPU
+\end{enumerate}
+
+La version optimisée utilise un kernel itératif avec un flag atomique (\texttt{atomicOr}) pour détecter la convergence, éliminant les transferts mémoire coûteux.
+
+\section{Benchmarks}
+
+\subsection{Configuration matérielle}
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{GPU} & NVIDIA GeForce RTX 5060 \\
+\textbf{CPU} & AMD Ryzen 9 5950X (16 cores, 32 threads) \\
+\textbf{RAM} & 58 Go \\
+\end{tabular}
+\end{center}
+
+\subsection{Résultats}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Vidéo} & \textbf{CPU (s)} & \textbf{GPU (s)} & \textbf{Speedup} \\
+\hline
+ACET.mp4 & 13.19 & 5.32 & 2.5$\times$ \\
+lil\_clown\_studio.mp4 & 40.62 & 7.96 & 5.1$\times$ \\
+1023-142621257\_large.mp4 & 72.27 & 12.02 & 6.0$\times$ \\
+27999-366978301\_large.mp4 & 37.60 & 7.66 & 4.9$\times$ \\
+3630-172488409\_large.mp4 & 64.26 & 8.55 & 7.5$\times$ \\
+6387-191695740\_large.mp4 & 69.01 & 10.22 & 6.8$\times$ \\
+20895-313083562\_large.mp4 & 164.57 & 20.99 & 7.8$\times$ \\
+\hline
+\textbf{Moyenne} & - & - & \textbf{5.8$\times$} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Graphique des performances}
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    bar width=12pt,
+    width=0.9\textwidth,
+    height=7cm,
+    ylabel={Temps (s)},
+    symbolic x coords={ACET, lil\_clown, 1023, 27999, 3630, 6387, 20895},
+    xtick=data,
+    x tick label style={rotate=45, anchor=east, font=\small},
+    legend style={at={(0.5,-0.25)}, anchor=north, legend columns=2},
+    ymin=0,
+    nodes near coords,
+    nodes near coords style={font=\tiny},
+    every node near coord/.append style={rotate=90, anchor=west},
+]
+\addplot[fill=main1!70] coordinates {
+    (ACET, 13.19)
+    (lil\_clown, 40.62)
+    (1023, 72.27)
+    (27999, 37.60)
+    (3630, 64.26)
+    (6387, 69.01)
+    (20895, 164.57)
+};
+\addplot[fill=main3!70] coordinates {
+    (ACET, 5.32)
+    (lil\_clown, 7.96)
+    (1023, 12.02)
+    (27999, 7.66)
+    (3630, 8.55)
+    (6387, 10.22)
+    (20895, 20.99)
+};
+\legend{CPU, GPU}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\section{Analyse des performances}
+
+\subsection{Impact des optimisations}
+
+\begin{center}
+\begin{tabular}{|l|l|c|}
+\hline
+\textbf{Version} & \textbf{Optimisation} & \textbf{Impact} \\
+\hline
+v1.0 & Baseline (hystérésis CPU) & Référence \\
+v1.1 & Hystérésis full GPU & \textbf{+346\%} \\
+v1.2 & Sans cudaDeviceSynchronize() & $\approx$ 0\% \\
+v1.3 & Shared memory morphologie & $\approx$ 0\% \\
+v1.4 & Fusion kernels & $\approx$ 0\% \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Bottlenecks identifiés}
+
+\begin{enumerate}
+    \item \textbf{Transferts Host$\leftrightarrow$Device} : Chaque frame est copiée vers le GPU puis le résultat est recopié. C'est le bottleneck principal après l'optimisation de l'hystérésis.
+    
+    \item \textbf{Hystérésis itératif} : Le kernel d'hystérésis peut nécessiter jusqu'à 100 itérations pour converger, avec une synchronisation à chaque itération pour vérifier le flag.
+\end{enumerate}
+
+\subsection{Pistes d'amélioration}
+
+\begin{itemize}
+    \item \textbf{Zero-copy memory} : Utiliser la mémoire partagée CPU/GPU pour éviter les copies explicites
+    \item \textbf{CUDA streams} : Overlapper les transferts et le calcul
+    \item \textbf{Persistent kernels} : Garder les données sur le GPU entre les frames
+\end{itemize}
+
+\section{Conclusion}
+
+Nous avons implémenté un système de détection de mouvement atteignant un speedup moyen de \textbf{5.8$\times$} par rapport à la version CPU. L'optimisation clé a été le portage de l'hystérésis sur GPU, qui a permis d'éliminer les transferts mémoire coûteux entre les itérations.
+
+Les optimisations classiques (shared memory, kernel fusion) n'ont pas apporté de gain significatif car le bottleneck se situe au niveau des transferts Host$\leftrightarrow$Device plutôt que dans le calcul lui-même.
+
+\vfill
+
+\begin{center}
+\textit{Projet réalisé dans le cadre du cours GPGPU - EPITA ING3 - 2025}
+\end{center}
+
+\end{document}
+
