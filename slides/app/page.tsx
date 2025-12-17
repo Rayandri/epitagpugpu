@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { GridBackground } from "@/components/GridBackground";
 import { TransitionEffect } from "@/components/TransitionEffect";
 import { SlideTitle } from "@/components/slides/SlideTitle";
@@ -27,6 +27,109 @@ const slides = [
   SlideDemo,
   SlideConclusion,
 ];
+
+type SlideVariantType = "zoom" | "slide" | "flip" | "fade" | "split" | "morph" | "rise" | "bounce" | "curtain" | "elegant";
+
+const slideAnimationTypes: SlideVariantType[] = [
+  "zoom",     // Titre - zoom explosif
+  "fade",     // Contexte - fade parallax
+  "slide",    // Pipeline - slide horizontal
+  "split",    // Algorithmes - split screen
+  "rise",     // GPU - monte du bas
+  "morph",    // Optimisation - morph
+  "rise",     // Benchmarks - barres du bas
+  "bounce",   // Speedup - bounce
+  "curtain",  // Demo - rideau
+  "elegant",  // Conclusion - élégant
+];
+
+const createVariants = (type: SlideVariantType): Variants => {
+  switch (type) {
+    case "zoom":
+      return {
+        enter: { scale: 0, opacity: 0, rotate: -10 },
+        center: { scale: 1, opacity: 1, rotate: 0 },
+        exit: { scale: 2, opacity: 0, rotate: 10 },
+      };
+    case "slide":
+      return {
+        enter: (d: number) => ({ x: d > 0 ? 1500 : -1500, opacity: 0 }),
+        center: { x: 0, opacity: 1 },
+        exit: (d: number) => ({ x: d < 0 ? 1500 : -1500, opacity: 0 }),
+      };
+    case "flip":
+      return {
+        enter: (d: number) => ({ rotateY: d > 0 ? 90 : -90, opacity: 0 }),
+        center: { rotateY: 0, opacity: 1 },
+        exit: (d: number) => ({ rotateY: d < 0 ? 90 : -90, opacity: 0 }),
+      };
+    case "fade":
+      return {
+        enter: { opacity: 0, y: -50 },
+        center: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: 50 },
+      };
+    case "split":
+      return {
+        enter: (d: number) => ({ x: d > 0 ? 1000 : -1000, scaleX: 0.5, opacity: 0 }),
+        center: { x: 0, scaleX: 1, opacity: 1 },
+        exit: (d: number) => ({ x: d < 0 ? 1000 : -1000, scaleX: 0.5, opacity: 0 }),
+      };
+    case "morph":
+      return {
+        enter: { scale: 0.5, opacity: 0, borderRadius: "50%" },
+        center: { scale: 1, opacity: 1, borderRadius: "0%" },
+        exit: { scale: 1.5, opacity: 0, borderRadius: "50%" },
+      };
+    case "rise":
+      return {
+        enter: { y: 800, opacity: 0, scale: 0.8 },
+        center: { y: 0, opacity: 1, scale: 1 },
+        exit: { y: -800, opacity: 0, scale: 0.8 },
+      };
+    case "bounce":
+      return {
+        enter: { scale: 0, opacity: 0 },
+        center: { scale: 1, opacity: 1 },
+        exit: { scale: 0, opacity: 0 },
+      };
+    case "curtain":
+      return {
+        enter: { scaleY: 0, opacity: 0, originY: 0 },
+        center: { scaleY: 1, opacity: 1 },
+        exit: { scaleY: 0, opacity: 0, originY: 1 },
+      };
+    case "elegant":
+      return {
+        enter: { opacity: 0, scale: 0.95, filter: "blur(20px)" },
+        center: { opacity: 1, scale: 1, filter: "blur(0px)" },
+        exit: { opacity: 0, scale: 1.05, filter: "blur(20px)" },
+      };
+    default:
+      return {
+        enter: { opacity: 0 },
+        center: { opacity: 1 },
+        exit: { opacity: 0 },
+      };
+  }
+};
+
+const getTransition = (type: SlideVariantType) => {
+  switch (type) {
+    case "zoom":
+      return { type: "spring" as const, stiffness: 300, damping: 25 };
+    case "bounce":
+      return { type: "spring" as const, stiffness: 400, damping: 15, mass: 1.2 };
+    case "elegant":
+      return { duration: 0.8, ease: [0.43, 0.13, 0.23, 0.96] as const };
+    case "curtain":
+      return { duration: 0.6, ease: "easeInOut" as const };
+    case "morph":
+      return { duration: 0.5, ease: "easeOut" as const };
+    default:
+      return { type: "spring" as const, stiffness: 200, damping: 25 };
+  }
+};
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -82,30 +185,9 @@ export default function Home() {
   }, [nextSlide, prevSlide, goToSlide]);
 
   const CurrentSlideComponent = slides[currentSlide];
-
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 1000 : -1000,
-      opacity: 0,
-      scale: 0.8,
-      rotateY: direction > 0 ? 15 : -15,
-      filter: "blur(10px)",
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      rotateY: 0,
-      filter: "blur(0px)",
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? 1000 : -1000,
-      opacity: 0,
-      scale: 0.8,
-      rotateY: direction < 0 ? 15 : -15,
-      filter: "blur(10px)",
-    }),
-  };
+  const currentAnimationType = slideAnimationTypes[currentSlide];
+  const currentVariants = useMemo(() => createVariants(currentAnimationType), [currentAnimationType]);
+  const currentTransition = useMemo(() => getTransition(currentAnimationType), [currentAnimationType]);
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#0a0a0a]" style={{ perspective: "1500px" }}>
@@ -121,18 +203,11 @@ export default function Home() {
         <motion.div
           key={currentSlide}
           custom={direction}
-          variants={slideVariants}
+          variants={currentVariants}
           initial="enter"
           animate="center"
           exit="exit"
-          transition={{ 
-            type: "spring", 
-            stiffness: 200, 
-            damping: 25,
-            mass: 1,
-            opacity: { duration: 0.4 },
-            filter: { duration: 0.3 },
-          }}
+          transition={currentTransition}
           className="absolute inset-0 flex items-center justify-center"
           style={{ transformStyle: "preserve-3d" }}
         >
