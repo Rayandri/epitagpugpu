@@ -29,7 +29,7 @@ export function SlideOptimization() {
           transition={{ delay: 0.3 }}
           className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6"
         >
-          <h3 className="text-xl font-bold text-red-400 mb-4">❌ Avant (v1.0)</h3>
+          <h3 className="text-xl font-bold text-red-400 mb-4">Avant (v1.0)</h3>
           <div className="space-y-2 text-white/70 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-red-400">→</span> cudaMemcpy2D (GPU → CPU)
@@ -53,7 +53,7 @@ export function SlideOptimization() {
           transition={{ delay: 0.5 }}
           className="bg-[#76B900]/10 border border-[#76B900]/30 rounded-2xl p-6"
         >
-          <h3 className="text-xl font-bold text-[#76B900] mb-4">✓ Après (v1.1)</h3>
+          <h3 className="text-xl font-bold text-[#76B900] mb-4">Apres (v1.1)</h3>
           <div className="space-y-2 text-white/70 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-[#76B900]">→</span> Kernel itératif GPU

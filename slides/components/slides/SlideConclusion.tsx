@@ -41,7 +41,7 @@ export function SlideConclusion() {
               transition={{ delay: 0.3 + i * 0.15 }}
               className="flex items-center gap-3 text-xl text-white/80"
             >
-              <span className="text-[#76B900] text-2xl">✓</span>
+              <span className="text-[#76B900] text-2xl font-bold">•</span>
               {point}
             </motion.div>
           ))}

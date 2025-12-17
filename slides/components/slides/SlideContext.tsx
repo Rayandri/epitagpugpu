@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 
 export function SlideContext() {
   const items = [
-    { icon: "🎥", text: "Vidéosurveillance" },
-    { icon: "🚗", text: "Véhicules autonomes" },
-    { icon: "🏭", text: "Industrie" },
-    { icon: "🎮", text: "Gaming / AR" },
+    { text: "Vidéosurveillance" },
+    { text: "Véhicules autonomes" },
+    { text: "Industrie" },
+    { text: "Gaming / AR" },
   ];
 
   return (
@@ -44,7 +44,6 @@ export function SlideContext() {
             transition={{ delay: 0.4 + i * 0.1 }}
             className="flex flex-col items-center gap-3 p-6 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
           >
-            <span className="text-4xl">{item.icon}</span>
             <span className="text-white/70">{item.text}</span>
           </motion.div>
         ))}
