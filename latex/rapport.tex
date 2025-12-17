@@ -29,6 +29,70 @@ Notre pipeline se compose de 4 étapes principales :
     \item \textbf{Hystérésis} : Double seuillage avec reconstruction
 \end{enumerate}
 
+\section{Configuration matérielle}
+
+\subsection{Environnement d'exécution}
+
+Les tests ont été réalisés sous \textbf{WSL2} (Windows Subsystem for Linux 2) avec Ubuntu 22.04.5 LTS. Cette configuration permet d'accéder au GPU NVIDIA via le driver WSL avec support CUDA complet.
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Composant} & \textbf{Spécifications} \\
+\hline
+\textbf{Système} & WSL2 - Ubuntu 22.04.5 LTS \\
+\textbf{Kernel} & 5.15.167.4-microsoft-standard-WSL2 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Processeur (CPU)}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Modèle} & AMD Ryzen 9 5950X \\
+\textbf{Architecture} & Zen 3 (7nm) \\
+\textbf{Cœurs / Threads} & 16 / 32 \\
+\textbf{Fréquence base/boost} & 3.4 GHz / 4.9 GHz \\
+\textbf{Cache L3} & 64 Mo \\
+\textbf{TDP} & 105W \\
+\hline
+\end{tabular}
+\end{center}
+
+Le Ryzen 9 5950X est un processeur haut de gamme avec d'excellentes performances single-thread et multi-thread, ce qui en fait une référence exigeante pour la comparaison CPU/GPU.
+
+\subsection{Mémoire (RAM)}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Capacité} & 64 Go (58 Go disponibles sous WSL2) \\
+\textbf{Type} & DDR4 \\
+\textbf{Fréquence} & 3600 MHz \\
+\textbf{Latence} & CL16-18-18 (estimé) \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Carte graphique (GPU)}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Modèle} & NVIDIA GeForce RTX 5060 \\
+\textbf{Architecture} & Blackwell \\
+\textbf{VRAM} & 8 Go GDDR7 \\
+\textbf{Compute Capability} & 12.0 \\
+\textbf{CUDA Version} & 13.0 \\
+\textbf{Driver} & 581.80 \\
+\hline
+\end{tabular}
+\end{center}
+
+La RTX 5060 est une carte de dernière génération avec l'architecture Blackwell, offrant un excellent rapport performance/prix pour le calcul GPGPU.
+
 \section{Choix d'implémentation}
 
 \subsection{Estimation du fond}
@@ -77,60 +141,87 @@ Tous les traitements sont implémentés en CUDA :
 L'optimisation majeure a été le portage de l'hystérésis sur GPU. La version initiale effectuait :
 
 \begin{enumerate}
-    \item Copie GPU $\rightarrow$ CPU
+    \item Copie GPU $\rightarrow$ CPU (\texttt{cudaMemcpy2D})
     \item Boucle d'hystérésis sur CPU (jusqu'à 100 itérations)
-    \item Copie CPU $\rightarrow$ GPU
+    \item Copie CPU $\rightarrow$ GPU (\texttt{cudaMemcpy2D})
 \end{enumerate}
 
 La version optimisée utilise un kernel itératif avec un flag atomique (\texttt{atomicOr}) pour détecter la convergence, éliminant les transferts mémoire coûteux.
 
-\section{Benchmarks}
+\section{Benchmarks et analyse}
 
-\subsection{Configuration matérielle}
-
-\begin{center}
-\begin{tabular}{ll}
-\textbf{GPU} & NVIDIA GeForce RTX 5060 \\
-\textbf{CPU} & AMD Ryzen 9 5950X (16 cores, 32 threads) \\
-\textbf{RAM} & 58 Go \\
-\end{tabular}
-\end{center}
-
-\subsection{Résultats}
+\subsection{Résultats CPU vs GPU (version finale)}
 
 \begin{center}
 \begin{tabular}{|l|c|c|c|}
 \hline
-\textbf{Vidéo} & \textbf{CPU (s)} & \textbf{GPU (s)} & \textbf{Speedup} \\
+\textbf{Vidéo} & \textbf{CPU (s)} & \textbf{GPU v1.5 (s)} & \textbf{Speedup} \\
 \hline
-ACET.mp4 & 13.19 & 5.32 & 2.5$\times$ \\
-lil\_clown\_studio.mp4 & 40.62 & 7.96 & 5.1$\times$ \\
-1023-142621257\_large.mp4 & 72.27 & 12.02 & 6.0$\times$ \\
-27999-366978301\_large.mp4 & 37.60 & 7.66 & 4.9$\times$ \\
-3630-172488409\_large.mp4 & 64.26 & 8.55 & 7.5$\times$ \\
-6387-191695740\_large.mp4 & 69.01 & 10.22 & 6.8$\times$ \\
-20895-313083562\_large.mp4 & 164.57 & 20.99 & 7.8$\times$ \\
+ACET.mp4 & 13.19 & 5.32 & \textbf{2.5$\times$} \\
+lil\_clown\_studio.mp4 & 40.62 & 7.96 & \textbf{5.1$\times$} \\
+1023-142621257\_large.mp4 & 72.27 & 12.02 & \textbf{6.0$\times$} \\
+27999-366978301\_large.mp4 & 37.60 & 7.66 & \textbf{4.9$\times$} \\
+3630-172488409\_large.mp4 & 64.26 & 8.55 & \textbf{7.5$\times$} \\
+6387-191695740\_large.mp4 & 69.01 & 10.22 & \textbf{6.8$\times$} \\
+20895-313083562\_large.mp4 & 164.57 & 20.99 & \textbf{7.8$\times$} \\
 \hline
-\textbf{Moyenne} & - & - & \textbf{5.8$\times$} \\
+\multicolumn{3}{|r|}{\textbf{Speedup moyen}} & \textbf{5.8$\times$} \\
 \hline
 \end{tabular}
 \end{center}
 
-\subsection{Graphique des performances}
+\subsection{Évolution des performances par version}
+
+\begin{center}
+\small
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Vidéo} & \textbf{v1.0} & \textbf{v1.1} & \textbf{v1.2} & \textbf{v1.3} & \textbf{v1.4} & \textbf{v1.5} \\
+\hline
+ACET & 6.26 & 5.24 & 5.23 & 6.26 & 6.41 & \textbf{5.32} \\
+lil\_clown & 28.70 & 9.49 & 10.09 & 10.31 & 9.36 & \textbf{7.96} \\
+1023 & 61.09 & \textbf{9.52} & 12.21 & 9.37 & 10.05 & 12.02 \\
+27999 & 33.62 & 7.37 & \textbf{5.43} & 7.36 & 7.76 & 7.66 \\
+3630 & 51.81 & 11.09 & 10.94 & 11.16 & 11.37 & \textbf{8.55} \\
+6387 & 63.80 & 8.78 & 10.85 & 8.46 & \textbf{8.12} & 10.22 \\
+20895 & 142.12 & 23.21 & 21.66 & 23.05 & 23.20 & \textbf{20.99} \\
+\hline
+\end{tabular}
+\end{center}
+
+\textit{Note : Les valeurs en gras indiquent la meilleure performance pour chaque vidéo.}
+
+\subsection{Impact des optimisations}
+
+\begin{center}
+\begin{tabular}{|l|l|c|l|}
+\hline
+\textbf{Version} & \textbf{Optimisation} & \textbf{Impact} & \textbf{Explication} \\
+\hline
+v1.0 $\rightarrow$ v1.1 & Hystérésis GPU & \textbf{+346\%} & Élimination transferts CPU$\leftrightarrow$GPU \\
+v1.1 $\rightarrow$ v1.2 & Sans cudaDeviceSync & $\approx$ 0\% & Déjà pipeliné par le driver \\
+v1.2 $\rightarrow$ v1.3 & Shared memory & $\approx$ 0\% & Rayon trop petit (3px) \\
+v1.3 $\rightarrow$ v1.4 & Fusion kernels & $\approx$ 0\% & Cache L2 déjà efficace \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Graphique comparatif CPU vs GPU}
 
 \begin{center}
 \begin{tikzpicture}
 \begin{axis}[
     ybar,
-    bar width=12pt,
-    width=0.9\textwidth,
-    height=7cm,
+    bar width=10pt,
+    width=0.95\textwidth,
+    height=8cm,
     ylabel={Temps (s)},
     symbolic x coords={ACET, lil\_clown, 1023, 27999, 3630, 6387, 20895},
     xtick=data,
     x tick label style={rotate=45, anchor=east, font=\small},
-    legend style={at={(0.5,-0.25)}, anchor=north, legend columns=2},
+    legend style={at={(0.5,-0.3)}, anchor=north, legend columns=2},
     ymin=0,
+    ymax=180,
     nodes near coords,
     nodes near coords style={font=\tiny},
     every node near coord/.append style={rotate=90, anchor=west},
@@ -153,50 +244,50 @@ lil\_clown\_studio.mp4 & 40.62 & 7.96 & 5.1$\times$ \\
     (6387, 10.22)
     (20895, 20.99)
 };
-\legend{CPU, GPU}
+\legend{CPU (Ryzen 9 5950X), GPU (RTX 5060)}
 \end{axis}
 \end{tikzpicture}
 \end{center}
 
-\section{Analyse des performances}
+\subsection{Analyse des résultats}
 
-\subsection{Impact des optimisations}
+\begin{property*}{Observation clé}{}
+Le speedup augmente avec la taille de la vidéo : de 2.5$\times$ pour ACET (courte) à 7.8$\times$ pour 20895 (longue). Cela s'explique par l'amortissement du coût d'initialisation CUDA sur plus de frames.
+\end{property*}
 
-\begin{center}
-\begin{tabular}{|l|l|c|}
-\hline
-\textbf{Version} & \textbf{Optimisation} & \textbf{Impact} \\
-\hline
-v1.0 & Baseline (hystérésis CPU) & Référence \\
-v1.1 & Hystérésis full GPU & \textbf{+346\%} \\
-v1.2 & Sans cudaDeviceSynchronize() & $\approx$ 0\% \\
-v1.3 & Shared memory morphologie & $\approx$ 0\% \\
-v1.4 & Fusion kernels & $\approx$ 0\% \\
-\hline
-\end{tabular}
-\end{center}
-
-\subsection{Bottlenecks identifiés}
+\textbf{Pourquoi les optimisations v1.2-v1.4 n'ont pas d'impact ?}
 
 \begin{enumerate}
-    \item \textbf{Transferts Host$\leftrightarrow$Device} : Chaque frame est copiée vers le GPU puis le résultat est recopié. C'est le bottleneck principal après l'optimisation de l'hystérésis.
+    \item \textbf{cudaDeviceSynchronize()} : Le driver CUDA optimise déjà le pipelining des kernels dans le même stream. Les supprimer n'apporte pas de gain mesurable.
     
-    \item \textbf{Hystérésis itératif} : Le kernel d'hystérésis peut nécessiter jusqu'à 100 itérations pour converger, avec une synchronisation à chaque itération pour vérifier le flag.
+    \item \textbf{Shared memory} : L'élément structurant a un rayon de 3 pixels. Le ratio surface/périmètre est trop faible pour amortir le coût du chargement du halo en shared memory.
+    
+    \item \textbf{Fusion de kernels} : Le cache L2 du GPU (8 Mo sur RTX 5060) conserve déjà les données entre kernels successifs, rendant la fusion inutile.
 \end{enumerate}
 
-\subsection{Pistes d'amélioration}
+\subsection{Bottleneck actuel}
+
+Le bottleneck principal est le \textbf{transfert Host$\leftrightarrow$Device} à chaque frame :
 
 \begin{itemize}
-    \item \textbf{Zero-copy memory} : Utiliser la mémoire partagée CPU/GPU pour éviter les copies explicites
-    \item \textbf{CUDA streams} : Overlapper les transferts et le calcul
-    \item \textbf{Persistent kernels} : Garder les données sur le GPU entre les frames
+    \item \texttt{cudaMemcpy2D} pour copier l'image d'entrée vers le GPU
+    \item \texttt{cudaMemcpy2D} pour copier le résultat vers le CPU
 \end{itemize}
+
+Pour une image 1920$\times$1080 RGB : $1920 \times 1080 \times 3 = 6.2$ Mo par transfert, soit 12.4 Mo par frame aller-retour.
 
 \section{Conclusion}
 
-Nous avons implémenté un système de détection de mouvement atteignant un speedup moyen de \textbf{5.8$\times$} par rapport à la version CPU. L'optimisation clé a été le portage de l'hystérésis sur GPU, qui a permis d'éliminer les transferts mémoire coûteux entre les itérations.
+Nous avons implémenté un système de détection de mouvement atteignant un speedup moyen de \textbf{5.8$\times$} par rapport à la version CPU sur un Ryzen 9 5950X. L'optimisation clé a été le portage de l'hystérésis sur GPU (v1.1), qui a permis un gain de \textbf{346\%}.
 
-Les optimisations classiques (shared memory, kernel fusion) n'ont pas apporté de gain significatif car le bottleneck se situe au niveau des transferts Host$\leftrightarrow$Device plutôt que dans le calcul lui-même.
+Les optimisations classiques (shared memory, kernel fusion, suppression des synchronisations) n'ont pas apporté de gain significatif car le bottleneck se situe au niveau des transferts mémoire Host$\leftrightarrow$Device.
+
+\textbf{Pistes d'amélioration :}
+\begin{itemize}
+    \item Utiliser la \textbf{zero-copy memory} pour éviter les copies explicites
+    \item Implémenter des \textbf{CUDA streams} pour overlapper transferts et calcul
+    \item Garder les données sur le GPU avec des \textbf{persistent kernels}
+\end{itemize}
 
 \vfill
 
@@ -205,4 +296,3 @@ Les optimisations classiques (shared memory, kernel fusion) n'ont pas apporté d
 \end{center}
 
 \end{document}
-
