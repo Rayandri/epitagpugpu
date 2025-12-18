@@ -17,6 +17,10 @@ import { SlideOptV13 } from "@/components/slides/SlideOptV13";
 import { SlideOptV14 } from "@/components/slides/SlideOptV14";
 import { SlideVersions } from "@/components/slides/SlideVersions";
 import { SlideBenchmarks } from "@/components/slides/SlideBenchmarks";
+import { SlideBenchV1 } from "@/components/slides/SlideBenchV1";
+import { SlideBenchV12 } from "@/components/slides/SlideBenchV12";
+import { SlideBenchV13 } from "@/components/slides/SlideBenchV13";
+import { SlideBenchV14 } from "@/components/slides/SlideBenchV14";
 import { SlideSpeedup } from "@/components/slides/SlideSpeedup";
 import { SlideDemo } from "@/components/slides/SlideDemo";
 import { SlideConclusion } from "@/components/slides/SlideConclusion";
@@ -34,6 +38,10 @@ const slides = [
   SlideOptV14,
   SlideVersions,
   SlideBenchmarks,
+  SlideBenchV1,
+  SlideBenchV12,
+  SlideBenchV13,
+  SlideBenchV14,
   SlideSpeedup,
   SlideDemo,
   SlideConclusion,
@@ -53,7 +61,11 @@ const slideAnimationTypes: SlideVariantType[] = [
   "fade",     // OptV13 shared mem - fade
   "slide",    // OptV14 fusion - slide
   "rise",     // Versions resume - rise
-  "bounce",   // Benchmarks - bounce
+  "bounce",   // Benchmarks global - bounce
+  "split",    // BenchV1 - split
+  "slide",    // BenchV12 - slide
+  "fade",     // BenchV13 - fade
+  "slide",    // BenchV14 - slide
   "rise",     // Speedup - rise
   "curtain",  // Demo - rideau
   "elegant",  // Conclusion - elegant
