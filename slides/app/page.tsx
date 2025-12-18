@@ -11,6 +11,7 @@ import { SlidePipeline } from "@/components/slides/SlidePipeline";
 import { SlideAlgorithms } from "@/components/slides/SlideAlgorithms";
 import { SlideGPU } from "@/components/slides/SlideGPU";
 import { SlideOptimization } from "@/components/slides/SlideOptimization";
+import { SlideVersions } from "@/components/slides/SlideVersions";
 import { SlideBenchmarks } from "@/components/slides/SlideBenchmarks";
 import { SlideSpeedup } from "@/components/slides/SlideSpeedup";
 import { SlideDemo } from "@/components/slides/SlideDemo";
@@ -23,6 +24,7 @@ const slides = [
   SlideAlgorithms,
   SlideGPU,
   SlideOptimization,
+  SlideVersions,
   SlideBenchmarks,
   SlideSpeedup,
   SlideDemo,
@@ -38,6 +40,7 @@ const slideAnimationTypes: SlideVariantType[] = [
   "split",    // Algorithmes - split screen
   "rise",     // GPU - monte du bas
   "morph",    // Optimisation - morph
+  "slide",    // Versions - slide horizontal
   "rise",     // Benchmarks - barres du bas
   "bounce",   // Speedup - bounce
   "curtain",  // Demo - rideau
