@@ -11,6 +11,10 @@ import { SlidePipeline } from "@/components/slides/SlidePipeline";
 import { SlideAlgorithms } from "@/components/slides/SlideAlgorithms";
 import { SlideGPU } from "@/components/slides/SlideGPU";
 import { SlideOptimization } from "@/components/slides/SlideOptimization";
+import { SlideOptV1 } from "@/components/slides/SlideOptV1";
+import { SlideOptV12 } from "@/components/slides/SlideOptV12";
+import { SlideOptV13 } from "@/components/slides/SlideOptV13";
+import { SlideOptV14 } from "@/components/slides/SlideOptV14";
 import { SlideVersions } from "@/components/slides/SlideVersions";
 import { SlideBenchmarks } from "@/components/slides/SlideBenchmarks";
 import { SlideSpeedup } from "@/components/slides/SlideSpeedup";
@@ -24,6 +28,10 @@ const slides = [
   SlideAlgorithms,
   SlideGPU,
   SlideOptimization,
+  SlideOptV1,
+  SlideOptV12,
+  SlideOptV13,
+  SlideOptV14,
   SlideVersions,
   SlideBenchmarks,
   SlideSpeedup,
@@ -39,12 +47,16 @@ const slideAnimationTypes: SlideVariantType[] = [
   "slide",    // Pipeline - slide horizontal
   "split",    // Algorithmes - split screen
   "rise",     // GPU - monte du bas
-  "morph",    // Optimisation - morph
-  "slide",    // Versions - slide horizontal
-  "rise",     // Benchmarks - barres du bas
-  "bounce",   // Speedup - bounce
+  "morph",    // Optimisation intro - morph
+  "split",    // OptV1 hysteresis - split
+  "slide",    // OptV12 cudaSync - slide
+  "fade",     // OptV13 shared mem - fade
+  "slide",    // OptV14 fusion - slide
+  "rise",     // Versions resume - rise
+  "bounce",   // Benchmarks - bounce
+  "rise",     // Speedup - rise
   "curtain",  // Demo - rideau
-  "elegant",  // Conclusion - élégant
+  "elegant",  // Conclusion - elegant
 ];
 
 const createVariants = (type: SlideVariantType): Variants => {
