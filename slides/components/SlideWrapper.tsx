@@ -12,7 +12,7 @@ export function SlideWrapper({ children }: { children: React.ReactNode }) {
     const updateScale = () => {
       const scaleX = window.innerWidth / DESIGN_WIDTH;
       const scaleY = window.innerHeight / DESIGN_HEIGHT;
-      setScale(Math.min(scaleX, scaleY));
+      setScale(Math.min(scaleX, scaleY) * 1.15);
     };
 
     updateScale();
